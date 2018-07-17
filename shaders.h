@@ -1,64 +1,61 @@
 #pragma once
+#include "glad/glad.h"
 #include <fstream>
 #include <string>
 #include <iostream>
+#include <vector>
 
-namespace borsuk
-{
-	struct Shader
+namespace borsuk {
+namespace shaders {
+
+	class Shader
 	{
-		Shader(char const* path, GLenum type)
-			: shader_handle_{ path }
-			, shader_id_{glCreateShader(type)}
-		{
-			if (!shader_handle_)
-				throw std::runtime_error("Cannot open file: " + std::string(path));
-			std::getline(shader_handle_, shader_code_, '\0');
+	public:
+		Shader(char const*, GLenum);
+		~Shader();
 
-			if (!shader_code_.size())
-				throw std::runtime_error("Error: shader file size == 0");
-		}
-
-		~Shader()
-		{
-			int delete_flag;
-			glGetShaderiv(shader_id_, GL_DELETE_STATUS, &delete_flag);
-			if (!delete_flag)
-				glDeleteShader(shader_id_);
-
-		}
-
-		void compileShader()
-		{
-			char const* shader{ shader_code_.c_str() };
-			glShaderSource(shader_id_, 1, &shader, nullptr);
-			glCompileShader(shader_id_);
-			checkCompilationStatus();
-			std::cout << shader << std::endl;
-		}
-
-		void checkCompilationStatus() const
-		{
-			int success;
-			char info_log[512];
-			glGetShaderiv(shader_id_, GL_COMPILE_STATUS, &success);
-			if (!success) {
-				glGetShaderInfoLog(shader_id_, 512, nullptr, info_log);
-				throw std::runtime_error(info_log);
-			}
-		}
-
-		void deleteShader()
-		{
-			glDeleteShader(shader_id_);
-		}
-
+		void compileShader();
+		void checkCompilationStatus() const;
+		void deleteShader();
 		unsigned getShader() const { return shader_id_; }
-	
+
+		// I delete it just for now, to ensure rule of 5
+		Shader(const Shader&) = delete;
+		Shader(Shader&&) = delete;
+		Shader& operator=(const Shader&) = delete;
+		Shader& operator=(Shader&&) = delete;
 	private:
 		std::ifstream shader_handle_;
 		std::string shader_code_;
 		unsigned shader_id_;
+		int close_flag_ = 0;
 	};
 
+} // namespace shaders
+
+namespace program {
+
+	class Program
+	{
+	public:
+		template<typename... Shaders>
+		explicit Program(Shaders... shaders)
+			: id_{ glCreateProgram() }
+		{
+			//(shaders_.emplace_back(shaders), ...); // c++ 17
+			int a[] = { 0, (shaders_.push_back(shaders), 0)... }; // c++ <= 14
+			static_cast<void>(a);
+		}
+
+		void attachShaders() const;
+		void use() const { glUseProgram(id_); }
+		void link() const;
+		void checkLinkingStatus() const;
+
+	private:
+		unsigned id_;
+		std::vector<GLuint> shaders_;
+	};
+
+} // nemespace program
 } // namespace borsuk

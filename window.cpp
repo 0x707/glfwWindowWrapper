@@ -9,24 +9,17 @@ int main()
 		borsuk::initGLFW();
 
 		borsuk::Window window(800, 600, "Borsuk");
-		borsuk::Shader vertex_shader("shaders\\vertex.txt", GL_VERTEX_SHADER);
-		borsuk::Shader fragment_shader("shaders\\fragment.txt", GL_FRAGMENT_SHADER);
+		borsuk::shaders::Shader vertex_shader("shaders\\vertex.txt", GL_VERTEX_SHADER);
+		borsuk::shaders::Shader fragment_shader("shaders\\fragment.txt", GL_FRAGMENT_SHADER);
 
 		vertex_shader.compileShader();
 		fragment_shader.compileShader();
 
-		unsigned shaderProgram{ glCreateProgram() };
-		glAttachShader(shaderProgram, vertex_shader.getShader());
-		glAttachShader(shaderProgram, fragment_shader.getShader());
-		glLinkProgram(shaderProgram);
-
-		int success;
-		char info_log[512];
-		glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-		if (!success) {
-			glGetProgramInfoLog(shaderProgram, 512, nullptr, info_log);
-			std::cerr << "PROGRAM::LINK::FAILED: " << info_log << std::endl;
-		}
+		// Program ctor can take any type convertible to unsigned (even sidnged arithmetic types)
+		borsuk::program::Program p{vertex_shader.getShader(), fragment_shader.getShader()};
+		p.attachShaders();
+		p.link(); // I can make ::link() function take delete its shader (inv vector shaders_)
+				  // but Im not sure if its a good idea
 
 		vertex_shader.deleteShader();
 		fragment_shader.deleteShader();
@@ -61,7 +54,7 @@ int main()
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-		glUseProgram(shaderProgram);
+		p.use();
 
 		while (!window.windowClosed()) {
 			glClear(GL_COLOR_BUFFER_BIT);
@@ -71,6 +64,9 @@ int main()
 		}
 	}
 	catch (std::runtime_error& e) {
+		std::cerr << e.what() << std::endl;
+	}
+	catch (std::domain_error& e) {
 		std::cerr << e.what() << std::endl;
 	}
 

@@ -2,6 +2,7 @@
 
 #include "window_class.h"
 #include "shaders.h"
+#include "drawing.h"
 
 int main()
 {
@@ -18,18 +19,17 @@ int main()
 		// Program ctor can take any type convertible to unsigned (even sidnged arithmetic types)
 		borsuk::program::Program p{vertex_shader.getShader(), fragment_shader.getShader()};
 		p.attachShaders();
-		p.link(); // I can make ::link() function take delete its shader (inv vector shaders_)
+		p.link(); // I can make ::link() function take delete its shader (in vector shaders_)
 				  // but Im not sure if its a good idea
 
 		vertex_shader.deleteShader();
 		fragment_shader.deleteShader();
-
-		float vertices[] = {
-			-0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-			-0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-			 0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-			 0.5f, -0.5f, 0.0f, 0.3f, 0.2f, 0.1f
-		};
+		
+		borsuk::shapes::Square square{
+			borsuk::Vertex2DCol{ -0.5f, -0.5f, 1.0f, 0.0f, 0.0f },
+			borsuk::Vertex2DCol{ -0.5f, 0.5f, 0.0f, 1.0f, 0.0f },
+			borsuk::Vertex2DCol{ 0.5f, 0.5f, 0.0f, 0.0f, 1.0f },
+			borsuk::Vertex2DCol{ 0.5f, -0.5f, 0.3f, 0.2f, 0.1f }};
 
 		unsigned indices[] = {
 			0, 1, 2,
@@ -43,7 +43,7 @@ int main()
 		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, square.Vertices().size() * sizeof(float), square.Vertices().data(), GL_STATIC_DRAW);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
